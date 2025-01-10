@@ -1,0 +1,918 @@
+﻿Prompt,Response
+Create a CAD model of a C block of thickness 0.25mm using mirror feature. The length of the ends of the C block is 0.5mm and the overall length of the block is 1.0mm. ,"```python
+#filename: C-block.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  A horizontal line is drawn on the workplane with the hLine function.
+# 2a. 1.0 is the distance, not coordinate. hLineTo allows using xCoordinate
+#     not distance.
+r = cq.Workplane(""front"").hLine(1.0)
+
+# 3.  Draw a series of vertical and horizontal lines with the vLine and hLine
+#     functions.
+r = r.vLine(0.5).hLine(-0.25).vLine(-0.25).hLineTo(0.0)
+
+# 4.  Mirror the geometry about the Y axis and extrude it into a 3D object.
+result = r.mirrorY().extrude(0.25)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""C-block.stl"")
+cq.exporters.export(result, ""C-block.step"")
+```"
+Create a CAD model of a plate using lines and arcs and extrude it with thickness of 0.25mm. The overall width of the plate is 2.0 mm,"```python
+#filename: extruded_plate_with_Lines_and_Arcs.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# These can be modified rather than hardcoding values for each dimension.
+width = 2.0  # Overall width of the plate
+thickness = 0.25  # Thickness of the plate
+
+# Extrude a plate outline made of lines and an arc
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Draws a line from the origin to an X position of the plate's width.
+# 2a. The starting point of a 2D drawing like this will be at the center of the
+#     workplane (0, 0) unless the moveTo() function moves the starting point.
+# 3.  A line is drawn from the last position straight up in the Y direction
+#     1.0 millimeters.
+# 4.  An arc is drawn from the last point, through point (1.0, 1.5) which is
+#     half-way back to the origin in the X direction and 0.5 mm above where
+#     the last line ended at. The arc then ends at (0.0, 1.0), which is 1.0 mm
+#     above (in the Y direction) where our first line started from.
+# 5.  An arc is drawn from the last point that ends on (-0.5, 1.0), the sag of
+#     the curve 0.2 determines that the curve is concave with the midpoint 0.1 mm
+#     from the arc baseline. If the sag was -0.2 the arc would be convex.
+#     This convention is valid when the profile is drawn counterclockwise.
+#     The reverse is true if the profile is drawn clockwise.
+#     Clockwise:        +sag => convex,  -sag => concave
+#     Counterclockwise: +sag => concave, -sag => convex
+# 6.  An arc is drawn from the last point that ends on (-0.7, -0.2), the arc is
+#     determined by the radius of -1.5 mm.
+#     Clockwise:        +radius => convex,  -radius => concave
+#     Counterclockwise: +radius => concave, -radius => convex
+# 7.  close() is called to automatically draw the last line for us and close
+#     the sketch so that it can be extruded.
+# 7a. Without the close(), the 2D sketch will be left open and the extrude
+#     operation will provide unpredictable results.
+# 8.  The 2D sketch is extruded into a solid object of the specified thickness.
+result = (
+    cq.Workplane(""front"")
+    .lineTo(width, 0)
+    .lineTo(width, 1.0)
+    .threePointArc((1.0, 1.5), (0.0, 1.0))
+    .sagittaArc((-0.5, 1.0), 0.2)
+    .radiusArc((-0.7, -0.2), -1.5)
+    .close()
+    .extrude(thickness)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""extruded_plate_with_Lines_and_Arcs.stl"")
+cq.exporters.export(result, ""extruded_plate_with_Lines_and_Arcs.step"")
+```"
+Create a CAD model of a plate with two polygons cut through it. The dimension of the plate is 3mm x 4mm x 0.25mm. The polygons are hexagons inscribed in a circle of diameter 1.0 mm.,"```python
+#filename: plate_with_hexagonal_holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# These can be modified rather than hardcoding values for each dimension.
+width = 3.0  # The width of the plate
+height = 4.0  # The height of the plate
+thickness = 0.25  # The thickness of the plate
+polygon_sides = 6  # The number of sides that the polygonal holes should have
+polygon_dia = 1.0  # The diameter of the circle enclosing the polygon points
+
+# Create a plate with two polygons cut through it
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  A 3D box is created in one box() operation to represent the plate.
+# 2a. The box is centered around the origin, which creates a result that may
+#     be unituitive when the polygon cuts are made.
+# 3.  2 points are pushed onto the stack and will be used as centers for the
+#     polygonal holes.
+# 4.  The two polygons are created, on for each point, with one call to
+#     polygon() using the number of sides and the circle that bounds the
+#     polygon.
+# 5.  The polygons are cut thru all objects that are in the line of extrusion.
+# 5a. A face was not selected, and so the polygons are created on the
+#     workplane. Since the box was centered around the origin, the polygons end
+#     up being in the center of the box. This makes them cut from the center to
+#     the outside along the normal (positive direction).
+# 6.  The polygons are cut through all objects, starting at the center of the
+#     box/plate and going ""downward"" (opposite of normal) direction. Functions
+#     like cutBlind() assume a positive cut direction, but cutThruAll() assumes
+#     instead that the cut is made from a max direction and cuts downward from
+#     that max through all objects.
+result = (
+    cq.Workplane(""front"")
+    .box(width, height, thickness)
+    .pushPoints([(0, 0.75), (0, -0.75)])
+    .polygon(polygon_sides, polygon_dia)
+    .cutThruAll()
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""plate_with_hexagonal_holes.stl"")
+cq.exporters.export(result, ""plate_with_hexagonal_holes.step"")
+```"
+"Create a CAD model of a rectangular block of length 2mm, breadth 2mm and thickness 0.5mm with four holes of diameter 0.125 mm located at the vertices of the construction rectangle of dimension 1.5mmx 1.5mm","```python
+#filename: rectangular_block_4_holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# Create a block with holes in each corner of a rectangle on that workplane.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects the top-most Z face of the box.
+# 4.  Creates a new workplane to build new geometry on.
+# 5.  Creates a for-construction rectangle that only exists to use for placing
+#     other geometry.
+# 6.  Selects the vertices of the for-construction rectangle.
+# 7.  Places holes at the center of each selected vertex.
+result = (
+    cq.Workplane(""front"")
+    .box(2, 2, 0.5)
+    .faces("">Z"")
+    .workplane()
+    .rect(1.5, 1.5, forConstruction=True)
+    .vertices()
+    .hole(0.125)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""rectangular_block_4_holes.stl"")
+cq.exporters.export(result, ""rectangular_block_4_holes.step"")
+```"
+Create CAD model of a cylinder plate of radius 50mm and thickness 13mm with a rectangualr hole of 19mm x 13mm at its centre.,"```python
+#filename: extruded_Cylindrical_Plate.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+from ocp_vscode import * #importing for visualization
+
+# These can be modified rather than hardcoding values for each dimension.
+circle_radius = 50.0  # Radius of the plate
+thickness = 13.0  # Thickness of the plate
+rectangle_width = 13.0  # Width of rectangular hole in cylindrical plate
+rectangle_length = 19.0  # Length of rectangular hole in cylindrical plate
+
+# Extrude a cylindrical plate with a rectangular hole in the middle of it.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  The 2D geometry for the outer circle is created at the same time as the
+#     rectangle that will create the hole in the center.
+# 2a. The circle and the rectangle will be automatically centered on the
+#     workplane.
+# 2b. Unlike some other functions like the hole(), circle() takes
+#     a radius and not a diameter.
+# 3.  The circle and rectangle are extruded together, creating a cylindrical
+#     plate with a rectangular hole in the center.
+# 3a. circle() and rect() could be changed to any other shape to completely
+#     change the resulting plate and/or the hole in it.
+result = (
+    cq.Workplane(""front"")
+    .circle(circle_radius)
+    .rect(rectangle_width, rectangle_length)
+    .extrude(thickness)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""extruded_Cylindrical_Plate.stl"")
+cq.exporters.export(result, ""extruded_Cylindrical_Plate.step"")
+```"
+Create a CAD model of a cylindrical plate of radius 3mm and thickness 0.25mm with a circular hole of radius 0.25mm at distance of 1.5mm from the centre along the y-axis and a square hole of 0.5mm x 0.5mm at the distance of 1.5mm from the center along the x-axis.,"```python
+#filename: cylindrical_plate_with_holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# These can be modified rather than hardcoding values for each dimension.
+circle_radius = 3.0  # The outside radius of the plate
+thickness = 0.25  # The thickness of the plate
+
+# Make a plate with two cutouts in it by moving the workplane center point
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 1b. The initial workplane center point is the center of the circle, at (0,0).
+# 2.  A circle is created at the center of the workplane
+# 2a. Notice that circle() takes a radius and not a diameter
+result = cq.Workplane(""front"").circle(circle_radius)
+
+# 3.  The work center is movide to (1.5, 0.0) by calling center().
+# 3a. The new center is specified relative to the previous center,not
+#     relative to global coordinates.
+# 4.  A 0.5mm x 0.5mm 2D square is drawn inside the circle.
+# 4a. The plate has not been extruded yet, only 2D geometry is being created.
+result = result.center(1.5, 0.0).rect(0.5, 0.5)
+
+# 5.  The work center is moved again, this time to (-1.5, 1.5).
+# 6.  A 2D circle is created at that new center with a radius of 0.25mm.
+result = result.center(-1.5, 1.5).circle(0.25)
+
+# 7.  All 2D geometry is extruded to the specified thickness of the plate.
+# 7a. The small circle and the square are enclosed in the outer circle of the
+#      plate and so it is assumed that we want them to be cut out of the plate.
+#      A separate cut operation is not needed.
+result = result.extrude(thickness)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""cylindrical_plate_with_holes.stl"")
+cq.exporters.export(result, ""cylindrical_plate_with_holes.step"")
+```"
+Create a CAD model of a box shell of dimension 2mmx2mm x 2mm with thickness 0.05mm with its top face removed.,"```python
+#filename: open_box_shell.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# Create a hollow box that's open at the top face.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects faces with normal in +z direction.
+# 4.  Create a shell by cutting out the top-most Z face.
+result = cq.Workplane(""front"").box(2, 2, 2).faces(""+Z"").shell(0.05)
+
+# Displays the result of this script
+show_object(result)
+
+cq.exporters.export(result, ""open_box_shell.stl"")
+cq.exporters.export(result, ""open_box_shell.step"")
+```"
+"Create a CAD model of a swept helix of radius 0.5mm, pitch 0.4 mm and height 2.4mm.","```python
+#filename: Swept_Helix.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+r = 0.5  # Radius of the helix
+p = 0.4  # Pitch of the helix - vertical distance between loops
+h = 2.4  # Height of the helix - total height
+
+# Helix
+wire = cq.Wire.makeHelix(pitch=p, height=h, radius=r)
+helix = cq.Workplane(obj=wire)
+
+# Final result: A 2D shape swept along a helix.
+result = (
+    cq.Workplane(""XZ"")  # helix is moving up the Z axis
+    .center(r, 0)  # offset isosceles trapezoid
+    .polyline(((-0.15, 0.1), (0.0, 0.05), (0, 0.35), (-0.15, 0.3)))
+    .close()  # make edges a wire
+    .sweep(helix, isFrenet=True)  # Frenet keeps orientation as expected
+)
+
+show_object(result)
+
+
+cq.exporters.export(result, ""Swept_Helix.stl"")
+cq.exporters.export(result, ""Swept_Helix.step"")
+```"
+"Create a CAD model of a rectangular Lego™ brick using the provided specifications: a bump pitch of 8.0 mm, bump diameter of 4.8 mm, and bump height of 1.8 mm. The brick should be parametrized by the number of bumps in length (lbumps) and width (wbumps), with the option to set it as thin (3.2 mm high) or thick (9.6 mm high). The base should be hollow with walls of appropriate thickness, and it should include circular bumps on the top and posts or tubes on the bottom for interlocking, designed according to the brick’s size. ","```python
+#filename: lego_Brick.py
+from ocp_vscode import * #importing for visualization
+# This script can create any regular rectangular Lego(TM) Brick
+import cadquery as cq
+
+#####
+# Inputs
+######
+lbumps = 1  # number of bumps long
+wbumps = 1  # number of bumps wide
+thin = True  # True for thin, False for thick
+
+#
+# Lego Brick Constants-- these make a lego brick a lego :)
+#
+pitch = 8.0
+clearance = 0.1
+bumpDiam = 4.8
+bumpHeight = 1.8
+if thin:
+    height = 3.2
+else:
+    height = 9.6
+
+t = (pitch - (2 * clearance) - bumpDiam) / 2.0
+postDiam = pitch - t  # works out to 6.5
+total_length = lbumps * pitch - 2.0 * clearance
+total_width = wbumps * pitch - 2.0 * clearance
+
+# make the base
+s = cq.Workplane(""XY"").box(total_length, total_width, height)
+
+# shell inwards not outwards
+s = s.faces(""<Z"").shell(-1.0 * t)
+
+# make the bumps on the top
+s = (
+    s.faces("">Z"")
+    .workplane()
+    .rarray(pitch, pitch, lbumps, wbumps, True)
+    .circle(bumpDiam / 2.0)
+    .extrude(bumpHeight)
+)
+
+# add posts on the bottom. posts are different diameter depending on geometry
+# solid studs for 1 bump, tubes for multiple, none for 1x1
+tmp = s.faces(""<Z"").workplane(invert=True)
+
+if lbumps > 1 and wbumps > 1:
+    tmp = (
+        tmp.rarray(pitch, pitch, lbumps - 1, wbumps - 1, center=True)
+        .circle(postDiam / 2.0)
+        .circle(bumpDiam / 2.0)
+        .extrude(height - t)
+    )
+elif lbumps > 1:
+    tmp = (
+        tmp.rarray(pitch, pitch, lbumps - 1, 1, center=True)
+        .circle(t)
+        .extrude(height - t)
+    )
+elif wbumps > 1:
+    tmp = (
+        tmp.rarray(pitch, pitch, 1, wbumps - 1, center=True)
+        .circle(t)
+        .extrude(height - t)
+    )
+else:
+    tmp = s
+
+# Render the solid
+show_object(tmp)
+
+
+cq.exporters.export(tmp, ""lego_Brick.stl"")
+cq.exporters.export(tmp, ""lego_Brick.step"")
+```"
+"
+Create a CAD model of a rectangular plate with rounded corners along the Z-axis. The plate should be 3 units in length, 3 units in width, and 0.5 units in height. Apply fillets with a radius of 0.125 units to all edges parallel to the Z-axis.","```python
+#filename: rectangular_plate_with_rounded_corners.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# Create a plate with 4 rounded corners in the Z-axis.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the X and Y origins to define the workplane, meaning that the
+#     positive Z direction is ""up"", and the negative Z direction is ""down"".
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects all edges that are parallel to the Z axis.
+# 4.  Creates fillets on each of the selected edges with the specified radius.
+result = cq.Workplane(""XY"").box(3, 3, 0.5).edges(""|Z"").fillet(0.125)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""rectangular_plate_with_rounded_corners.stl"")
+cq.exporters.export(result, ""rectangular_plate_with_rounded_corners.step"")
+```"
+"
+Create a CAD model of a lofted section between a rectangle and a circular section. Start with a rectangular box measuring 4.0 units in length, 4.0 units in width, and 0.25 units in height, oriented on the ""front"" workplane. On the top-most face of the box, draw a 2D circle with a radius of 1.5 units. Create a new workplane offset 3.0 units above this face, and draw a 2D rectangle measuring 0.75 units by 0.5 units. Finally, generate a loft to smoothly connect the circle and rectangle, combining the geometries into a single solid.","```python
+#filename: loft_between_rect_and_circle.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# Create a lofted section between a rectangle and a circular section.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects the top-most Z face of the box.
+# 4.  Draws a 2D circle at the center of the the top-most face of the box.
+# 5.  Creates a workplane 3 mm above the face the circle was drawn on.
+# 6.  Draws a 2D circle on the new, offset workplane.
+# 7.  Creates a loft between the circle and the rectangle.
+result = (
+    cq.Workplane(""front"")
+    .box(4.0, 4.0, 0.25)
+    .faces("">Z"")
+    .circle(1.5)
+    .workplane(offset=3.0)
+    .rect(0.75, 0.5)
+    .loft(combine=True)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""loft_between_rect_and_circle.stl"")
+cq.exporters.export(result, ""loft_between_rect_and_circle.step"")
+```"
+"Create a CAD model of a plate using splines. The plate has one of its edge as defined by spline between (0,1) and (3,1) of the plate. The plate is 3mm in length.","```python
+#filename: plate_with_spline_edge.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# 1.  Establishes a workplane to create the spline on to extrude.
+# 1a. Uses the X and Y origins to define the workplane, meaning that the
+# positive Z direction is ""up"", and the negative Z direction is ""down"".
+s = cq.Workplane(""XY"")
+
+# The points that the spline will pass through
+sPnts = [
+    (2.75, 1.5),
+    (2.5, 1.75),
+    (2.0, 1.5),
+    (1.5, 1.0),
+    (1.0, 1.25),
+    (0.5, 1.0),
+    (0, 1.0),
+]
+
+# 2.  Generate our plate with the spline feature and make sure it is a
+#     closed entity
+r = s.lineTo(3.0, 0).lineTo(3.0, 1.0).spline(sPnts, includeCurrent=True).close()
+
+# 3.  Extrude to turn the wire into a plate
+result = r.extrude(0.5)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""plate_with_spline_edge.stl"")
+cq.exporters.export(result, ""plate_with_spline_edge.step"")
+```"
+"Create a CAD model of a simple block of length 80 mm, height 60mm and thickness 10mm.","```python
+#filename: Simple_Block.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+from ocp_vscode import * #importing for visualization
+# These can be modified rather than hardcoding values for each dimension.
+length = 80.0  # Length of the block
+height = 60.0  # Height of the block
+thickness = 10.0  # Thickness of the block
+
+# Create a 3D block based on the dimension variables above.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the X and Y origins to define the workplane, meaning that the
+# positive Z direction is ""up"", and the negative Z direction is ""down"".
+result = cq.Workplane(""XY"").box(length, height, thickness)
+
+show_object(result)
+
+
+cq.exporters.export(result, ""Simple_Block.stl"")
+cq.exporters.export(result, ""Simple_Block.step"")
+```"
+"Create a CAD model of a box with angled holes positioned at the vertices of a construction rectangle. Start with a rectangular box measuring 4.0 units in length, 4.0 units in width, and 0.25 units in height, oriented on the ""front"" workplane. Select the top-most face of the box and create a new workplane that is offset by (0, -1.5, 1.0) and rotated by 60 degrees along the X-axis. Draw a for-construction rectangle with dimensions 1.5 units by 1.5 units to define placement points. Select the vertices of the rectangle and create circular holes with a diameter of 0.25 units at each vertex, resulting in angled holes in the top face.","```python
+#filename: plate_with_angled_holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects the top-most Z face of the box.
+# 4.  Creates a new workplane and then moves and rotates it with the
+#     transformed function.
+# 5.  Creates a for-construction rectangle that only exists to use for placing
+#     other geometry.
+# 6.  Selects the vertices of the for-construction rectangle.
+# 7.  Places holes at the center of each selected vertex.
+# 7a. Since the workplane is rotated, this results in angled holes in the face.
+result = (
+    cq.Workplane(""front"")
+    .box(4.0, 4.0, 0.25)
+    .faces("">Z"")
+    .workplane()
+    .transformed(offset=(0, -1.5, 1.0), rotate=(60, 0, 0))
+    .rect(1.5, 1.5, forConstruction=True)
+    .vertices()
+    .hole(0.25)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""plate_with_angled_holes.stl"")
+cq.exporters.export(result, ""plate_with_angled_holes.step"")
+```"
+"Create a CAD model of I beam using polylines. The length of the beam is 100mm. The height, width and thickness of the beam are 20mm, 20mm and 1.0 mm respectively.","```python
+#filename: I_beam_using_polylines.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# These can be modified rather than hardcoding values for each dimension.
+# Define up our Length, Height, Width, and thickness of the beam
+(L, H, W, t) = (100.0, 20.0, 20.0, 1.0)
+
+# Define the points that the polyline will be drawn to/thru
+pts = [
+    (0, H / 2.0),
+    (W / 2.0, H / 2.0),
+    (W / 2.0, (H / 2.0 - t)),
+    (t / 2.0, (H / 2.0 - t)),
+    (t / 2.0, (t - H / 2.0)),
+    (W / 2.0, (t - H / 2.0)),
+    (W / 2.0, H / -2.0),
+    (0, H / -2.0),
+]
+
+# We generate half of the I-beam outline and then mirror it to create the full
+# I-beam.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  moveTo() is used to move the first point from the origin (0, 0) to
+#     (0, 10.0), with 10.0 being half the height (H/2.0). If this is not done
+#     the first line will start from the origin, creating an extra segment that
+#     will cause the extrude to have an invalid shape.
+# 3.  The polyline function takes a list of points and generates the lines
+#     through all the points at once.
+# 3.  Only half of the I-beam profile has been drawn so far. That half is
+#     mirrored around the Y-axis to create the complete I-beam profile.
+# 4.  The I-beam profile is extruded to the final length of the beam.
+result = cq.Workplane(""front"").polyline(pts).mirrorY().extrude(L)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""I_beam_using_polylines.stl"")
+cq.exporters.export(result, ""I_beam_using_polylines.step"")
+```"
+Create a CAD model of a block of dimension 2mm x 3mm x 0.5mm with hole of diameter 0.5 mm by creating a block first and then selecting the upper face to create the required hole.,"```python
+#filename: block_with_face_selection.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Creates a 3D box that will have a hole placed in it later.
+result = cq.Workplane(""front"").box(2, 3, 0.5)
+
+# 3.  Find the top-most face with the >Z max selector.
+# 3a. Establish a new workplane to build geometry on.
+# 3b.  Create a hole down into the box.
+result = result.faces("">Z"").workplane().hole(0.5)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""block_with_face_selection.stl"")
+cq.exporters.export(result, ""block_with_face_selection.step"")
+```"
+"Create a CAD model of a rectangular block 80mm x 60mm x 10mm , with counter-bored holes for M2 socket head cap screws at the corners, and a circular pocket 22mm in diameter in the middle for a bearing. The bored holes should be 12mm far from the edge.","```python
+#filename: pillow_block_with_counterbored_holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+from ocp_vscode import * #importing for visualization
+
+# These can be modified rather than hardcoding values for each dimension.
+length = 80.0  # Length of the block
+width = 100.0  # Width of the block
+thickness = 10.0  # Thickness of the block
+center_hole_dia = 22.0  # Diameter of center hole in block
+cbore_hole_diameter = 2.4  # Bolt shank/threads clearance hole diameter
+cbore_inset = 12.0  # How far from the edge the cbored holes are set
+cbore_diameter = 4.4  # Bolt head pocket hole diameter
+cbore_depth = 2.1  # Bolt head pocket hole depth
+
+# Create a 3D block based on the dimensions above and add a 22mm center hold
+# and 4 counterbored holes for bolts
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the X and Y origins to define the workplane, meaning that the
+#     positive Z direction is ""up"", and the negative Z direction is ""down"".
+# 2.  The highest(max) Z face is selected and a new workplane is created on it.
+# 3.  The new workplane is used to drill a hole through the block.
+# 3a. The hole is automatically centered in the workplane.
+# 4.  The highest(max) Z face is selected and a new workplane is created on it.
+# 5.  A for-construction rectangle is created on the workplane based on the
+#     block's overall dimensions.
+# 5a. For-construction objects are used only to place other geometry, they
+#     do not show up in the final displayed geometry.
+# 6.  The vertices of the rectangle (corners) are selected, and a counter-bored
+#     hole is placed at each of the vertices (all 4 of them at once).
+result = (
+    cq.Workplane(""XY"")
+    .box(length, width, thickness)
+    .faces("">Z"")
+    .workplane()
+    .hole(center_hole_dia)
+    .faces("">Z"")
+    .workplane()
+    .rect(length - cbore_inset, width - cbore_inset, forConstruction=True)
+    .vertices()
+    .cboreHole(cbore_hole_diameter, cbore_diameter, cbore_depth)
+    .edges(""|Z"")
+    .fillet(2.0)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""pillow_block_with_counterbored_holes.stl"")
+cq.exporters.export(result, ""pillow_block_with_counterbored_holes.step"")
+```"
+"Create a CAD model of a block with a bored hole of length 80mm, height, 60mm, thickness 10mm and center hole diameter 22mm.","```python
+#filename: block_with_bored_center_hole.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+from ocp_vscode import * #importing for visualization
+# These can be modified rather than hardcoding values for each dimension.
+length = 80.0  # Length of the block
+height = 60.0  # Height of the block
+thickness = 10.0  # Thickness of the block
+center_hole_dia = 22.0  # Diameter of center hole in block
+
+# Create a block based on the dimensions above and add a 22mm center hole.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the X and Y origins to define the workplane, meaning that the
+# positive Z direction is ""up"", and the negative Z direction is ""down"".
+# 2.  The highest (max) Z face is selected and a new workplane is created on it.
+# 3.  The new workplane is used to drill a hole through the block.
+# 3a. The hole is automatically centered in the workplane.
+result = (
+    cq.Workplane(""XY"")
+    .box(length, height, thickness)
+    .faces("">Z"")
+    .workplane()
+    .hole(center_hole_dia)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""block_with_bored_center_hole.stl"")
+cq.exporters.export(result, ""block_with_bored_center_hole.step"")
+```"
+"Create a CAD model of a 1x1x1 unit block with a 0.25 unit radius hole drilled all the way through from the top. Then, split the block by creating a workplane in the middle along the Y-axis and keep only the top portion of the block.","```python
+#filename: split_block.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# Create a simple block with a hole through it that we can split.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the X and Y origins to define the workplane, meaning that the
+#     positive Z direction is ""up"", and the negative Z direction is ""down"".
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects the top-most face of the box and establishes a workplane on it
+#     that new geometry can be built on.
+# 4.  Draws a 2D circle on the new workplane and then uses it to cut a hole
+#     all the way through the box.
+c = cq.Workplane(""XY"").box(1, 1, 1).faces("">Z"").workplane().circle(0.25).cutThruAll()
+
+# 5.  Selects the face furthest away from the origin in the +Y axis direction.
+# 6.  Creates an offset workplane that is set in the center of the object.
+# 6a. One possible improvement to this script would be to make the dimensions
+#     of the box variables, and then divide the Y-axis dimension by 2.0 and
+#     use that to create the offset workplane.
+# 7.  Uses the embedded workplane to split the object, keeping only the ""top""
+#     portion.
+result = c.faces("">Y"").workplane(-0.5).split(keepTop=True)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""split_block.stl"")
+cq.exporters.export(result, ""split_block.step"")
+```"
+Create a CAD model of a box of dimension 3mmx 2mm x 0.5mm with through hole of diameter 1.0 mm at its lower left vertex.,"```python
+#filename: box_with_hole_on_vertex.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  Creates a 3D box that will have a hole placed in it later.
+result = cq.Workplane(""front"").box(3, 2, 0.5)
+
+# 3.  Select the lower left vertex and make a workplane.
+# 3a. The top-most Z face is selected using the >Z selector.
+# 3b. The lower-left vertex of the faces is selected with the <XY selector.
+# 3c. A new workplane is created on the vertex to build future geometry on.
+result = result.faces("">Z"").vertices(""<XY"").workplane(centerOption=""CenterOfMass"")
+
+# 4.  A circle is drawn with the selected vertex as its center.
+# 4a. The circle is cut down through the box to cut the corner out.
+result = result.circle(1.0).cutThruAll()
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""box_with_hole_on_vertex.stl"")
+cq.exporters.export(result, ""box_with_hole_on_vertex.step"")
+```"
+"
+Create a CAD model of a case with a bottom and top part using the following process: Start by creating a solid 20x20x10 box and apply fillets to the edges, excluding the four edges on the top face. Then, shell the box with a thickness of 2 units, leaving the top face open. Next, select the top outer wire, create a centerline wire for the case seam, and cover it with a temporary lid. Use a cut to leave a lip on the case seam surface. For the top part, create a similar process but remove material inside the case seam centerline to create an outer lip. Visualize both the bottom and top parts with the respective options for transparency.","```python
+#filename: case_seam_lip.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+from cadquery.selectors import AreaNthSelector
+
+case_bottom = (
+    cq.Workplane(""XY"")
+    .rect(20, 20)
+    .extrude(10)  # solid 20x20x10 box
+    .edges(""|Z or <Z"")
+    .fillet(2)  # rounding all edges except 4 edges of the top face
+    .faces("">Z"")
+    .shell(2)  # shell of thickness 2 with top face open
+    .faces("">Z"")
+    .wires(AreaNthSelector(-1))  # selecting top outer wire
+    .toPending()
+    .workplane()
+    .offset2D(-1)  # creating centerline wire of case seam face
+    .extrude(1)  # covering the sell with temporary ""lid""
+    .faces("">Z[-2]"")
+    .wires(AreaNthSelector(0))  # selecting case crossection wire
+    .toPending()
+    .workplane()
+    .cutBlind(2)  # cutting through the ""lid"" leaving a lip on case seam surface
+)
+
+# similar process repeated for the top part
+# but instead of ""growing"" an inner lip
+# material is removed inside case seam centerline
+# to create an outer lip
+case_top = (
+    cq.Workplane(""XY"")
+    .move(25)
+    .rect(20, 20)
+    .extrude(5)
+    .edges(""|Z or >Z"")
+    .fillet(2)
+    .faces(""<Z"")
+    .shell(2)
+    .faces(""<Z"")
+    .wires(AreaNthSelector(-1))
+    .toPending()
+    .workplane()
+    .offset2D(-1)
+    .cutBlind(-1)
+)
+
+show_object(case_bottom)
+show_object(case_top, options={""alpha"": 0.5})
+
+
+cq.exporters.export(case_bottom, ""case_bottom.stl"")
+cq.exporters.export(case_bottom, ""case_bottom.step"")
+
+cq.exporters.export(case_top, ""case_top.step"")
+cq.exporters.export(case_top, ""case_top.stl"")
+
+```"
+"Create a 4x2x0.5 plate with four counter-sunk holes. The holes should have a diameter of 0.125, a counter-sink diameter of 0.25, and a counter-sink angle of 82°. The holes should be placed at the corner vertices of a 3.5x1.5 construction rectangle.","```python
+#filename: Counter_Sunk_Holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# Create a plate with 4 counter-sunk holes in it.
+# 1.  Establishes a workplane using an XY object instead of a named plane.
+# 2.  Creates a plain box to base future geometry on with the box() function.
+# 3.  Selects the top-most face of the box and established a workplane on that.
+# 4.  Draws a for-construction rectangle on the workplane which only exists for
+#     placing other geometry.
+# 5.  Selects the corner vertices of the rectangle and places a counter-sink
+#     hole, using each vertex as the center of a hole using the cskHole()
+#     function.
+# 5a. When the depth of the counter-sink hole is set to None, the hole will be
+#     cut through.
+result = (
+    cq.Workplane(cq.Plane.XY())
+    .box(4, 2, 0.5)
+    .faces("">Z"")
+    .workplane()
+    .rect(3.5, 1.5, forConstruction=True)
+    .vertices()
+    .cskHole(0.125, 0.25, 82.0, depth=None)
+)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""Counter_Sunk_Holes.stl"")
+cq.exporters.export(result, ""Counter_Sunk_Holes.step"")
+```"
+Create a circular plate of radius 2mm and thickness 0.125mm with four holes of radius 0.25mm patterned at distance of 1.5mm from the centre along the axes.,"```python
+#filename: circular_plate_with_patterned_holes.py
+from ocp_vscode import * #importing for visualization
+import cadquery as cq
+
+# These can be modified rather than hardcoding values for each dimension.
+plate_radius = 2.0  # The radius of the plate that will be extruded
+hole_pattern_radius = 0.25  # Radius of circle where the holes will be placed
+thickness = 0.125  # The thickness of the plate that will be extruded
+
+# Make a plate with 4 holes in it at various points in a polar arrangement from
+# the center of the workplane.
+# 1.  Establishes a workplane that an object can be built on.
+# 1a. Uses the named plane orientation ""front"" to define the workplane, meaning
+#     that the positive Z direction is ""up"", and the negative Z direction
+#     is ""down"".
+# 2.  A 2D circle is drawn that will become though outer profile of the plate.
+r = cq.Workplane(""front"").circle(plate_radius)
+
+# 3. Push 4 points on the stack that will be used as the center points of the
+#    holes.
+r = r.pushPoints([(1.5, 0), (0, 1.5), (-1.5, 0), (0, -1.5)])
+
+# 4. This circle() call will operate on all four points, putting a circle at
+#    each one.
+r = r.circle(hole_pattern_radius)
+
+# 5.  All 2D geometry is extruded to the specified thickness of the plate.
+# 5a. The small hole circles are enclosed in the outer circle of the plate and
+#     so it is assumed that we want them to be cut out of the plate.  A
+#     separate cut operation is not needed.
+result = r.extrude(thickness)
+
+# Displays the result of this script
+show_object(result)
+
+
+cq.exporters.export(result, ""circular_plate_with_patterned_holes.stl"")
+cq.exporters.export(result, ""circular_plate_with_patterned_holes.step"")
+```"
+Create a star plate having side length 5mm inscribed in a circle of 2.5mm with thickness of 2mm.,"```python
+# filename: five_pointed_star_plate.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+inner_radius = side_length / 2
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five pointed triangles and extrude it to form a 3D plate
+star_plate = (
+    cq.Workplane(""XY"")
+    .polyline([
+        (0, side_length),
+        (inner_radius * 0.5878, inner_radius * 0.8090),
+        (side_length * 0.9511, side_length * 0.3090),
+        (inner_radius * 0.9511, -inner_radius * 0.3090),
+        (side_length * 0.5878, -side_length * 0.8090),
+        (0, -inner_radius),
+        (-side_length * 0.5878, -side_length * 0.8090),
+        (-inner_radius * 0.9511, -inner_radius * 0.3090),
+        (-side_length * 0.9511, side_length * 0.3090),
+        (-inner_radius * 0.5878, inner_radius * 0.8090),
+        (0, side_length)
+    ])
+    .close()
+    .extrude(thickness)
+)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""five_pointed_star_plate.stl"")
+cq.exporters.export(star_plate.section(), ""five_pointed_star_plate.dxf"")
+cq.exporters.export(star_plate, ""five_pointed_star_plate.step"")
+
+# Step 4: Visualize the Model
+show_object(star_plate)  # always visualize the model
+```"

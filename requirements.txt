@@ -10,3 +10,5 @@ tiktoken==0.7.0
 autogen[retrievechat]
 pyautogen[gemini]
 flaml[automl]
+streamlit
+streamlit_stl

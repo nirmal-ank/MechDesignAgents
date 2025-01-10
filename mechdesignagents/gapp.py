@@ -1,6 +1,3 @@
-import os, sys
-
-
 import gradio as gr
 from chat_with_designer_expert_multimodal import multimodal_designers_chat
 

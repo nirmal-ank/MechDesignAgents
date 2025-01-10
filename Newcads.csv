@@ -1,0 +1,805 @@
+Prompt,Response
+Create a star plate having side length 5mm inscribed in a circle of 2.5mm with thickness of 2mm.,"```python
+                        # filename: star_shape_with_polyline.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import math
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+angle_between_points = 360 / (number_of_points * 2)
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape using polyline
+points = []
+for i in range(number_of_points * 2):
+    angle = math.radians(i * angle_between_points)
+    radius = side_length if i % 2 == 0 else side_length / 2
+    x = radius * math.cos(angle)
+    y = radius * math.sin(angle)
+    points.append((x, y))
+
+star_2d = cq.Workplane(""XY"").polyline(points).close()
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_2d.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_shape_with_polyline.stl"")
+cq.exporters.export(star_plate.section(), ""star_shape_with_polyline.dxf"")
+cq.exporters.export(star_plate, ""star_shape_with_polyline.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+bracket.py,"```python
+                        # filename: l_bracket.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+height = 100.0
+length = 200.0
+thickness = 50.0
+total_length = 1000.0
+
+# Step 2: Create the CAD Model
+# Create a 2D L-shaped sketch
+l_shape = (
+    cq.Workplane(""XY"")
+    .lineTo(0, height)
+    .lineTo(length, height)
+    .lineTo(length, height - thickness)
+    .lineTo(thickness, height - thickness)
+    .lineTo(thickness, 0)
+    .close()
+)
+
+# Extrude the 2D sketch to form a 3D model
+l_bracket = l_shape.extrude(total_length)
+
+# Step 3: Save the Model
+cq.exporters.export(l_bracket, ""l_bracket.stl"")
+cq.exporters.export(l_bracket.section(), ""l_bracket.dxf"")
+cq.exporters.export(l_bracket, ""l_bracket.step"")
+
+# Step 4: Visualize the Model
+show_object(l_bracket)  # always visualize the model```"
+component.py,"```python
+                        # filename: rectangular_component.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+length = 4.00
+height = 2.00
+width = 1.00
+corner_radius = 0.25
+threaded_hole_diameter = 0.25  # Approximate diameter for 1/4-20 UNC
+threaded_hole_depth = 0.50
+through_hole_diameter = 0.500
+distance_between_holes = 2.500
+distance_to_edge = 0.75
+
+# Step 2: Create the CAD Model
+# Create base rectangle and extrude
+base = cq.Workplane(""XY"").rect(length, height).extrude(width)
+
+# Apply corner radius
+base = base.edges(""|Z"").fillet(corner_radius)
+
+# Drill threaded hole
+threaded_hole_position = (distance_to_edge, height / 2)
+base = base.faces("">Z"").workplane().center(*threaded_hole_position).hole(threaded_hole_diameter, threaded_hole_depth)
+
+# Drill through hole
+through_hole_position = (distance_to_edge + distance_between_holes, height / 2)
+base = base.faces("">Z"").workplane().center(*through_hole_position).hole(through_hole_diameter)
+
+# Step 3: Save the Model
+cq.exporters.export(base, ""rectangular_component.stl"")
+cq.exporters.export(base.section(), ""rectangular_component.dxf"")
+cq.exporters.export(base, ""rectangular_component.step"")
+
+# Step 4: Visualize the Model
+show(base)  # always visualize the model```"
+plate.py,"```python
+                        # filename: star_plate.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+side_length = 5.0  # mm
+thickness = 2.0    # mm
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape using a sketch
+star_sketch = (
+    cq.Workplane(""XY"")
+    .moveTo(0, side_length / 2)
+    .lineTo(side_length / 4, side_length / 4)
+    .lineTo(side_length / 2, 0)
+    .lineTo(side_length / 4, -side_length / 4)
+    .lineTo(0, -side_length / 2)
+    .lineTo(-side_length / 4, -side_length / 4)
+    .lineTo(-side_length / 2, 0)
+    .lineTo(-side_length / 4, side_length / 4)
+    .close()
+)
+
+# Extrude the star sketch to create a 3D plate
+star_plate = star_sketch.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate.dxf"")
+cq.exporters.export(star_plate, ""star_plate.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+pointed_star_plate.py,"```python
+                        # filename: five_pointed_star_plate.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+inner_radius = side_length / 2
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five pointed triangles and extrude it to form a 3D plate
+star_plate = (
+    cq.Workplane(""XY"")
+    .polyline([
+        (0, side_length),
+        (inner_radius * 0.5878, inner_radius * 0.8090),
+        (side_length * 0.9511, side_length * 0.3090),
+        (inner_radius * 0.9511, -inner_radius * 0.3090),
+        (side_length * 0.5878, -side_length * 0.8090),
+        (0, -inner_radius),
+        (-side_length * 0.5878, -side_length * 0.8090),
+        (-inner_radius * 0.9511, -inner_radius * 0.3090),
+        (-side_length * 0.9511, side_length * 0.3090),
+        (-inner_radius * 0.5878, inner_radius * 0.8090),
+        (0, side_length)
+    ])
+    .close()
+    .extrude(thickness)
+)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""five_pointed_star_plate.stl"")
+cq.exporters.export(star_plate.section(), ""five_pointed_star_plate.dxf"")
+cq.exporters.export(star_plate, ""five_pointed_star_plate.step"")
+
+# Step 4: Visualize the Model
+show_object(star_plate)  # always visualize the model```"
+bracket.py,"```python
+                        # filename: metal_bracket.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+length = 135.0
+width = 80.0
+height = 145.0
+hole_diameter = 13.5
+hole_spacing_x = 60.0
+hole_spacing_y = 50.0
+diagonal_support = 113.14
+rib_thickness = 10.0  # Assumed thickness for the rib
+
+# Step 2: Create the CAD Model
+# Create the base plate
+base = cq.Workplane(""XY"").box(length, width, rib_thickness)
+
+# Create the vertical plate
+vertical_plate = (
+    cq.Workplane(""XY"")
+    .transformed(offset=(0, 0, rib_thickness))
+    .box(width, rib_thickness, height)
+)
+
+# Create holes in the base plate
+base_holes = base.faces("">Z"").workplane().rarray(hole_spacing_x, hole_spacing_y, 2, 2).hole(hole_diameter)
+
+# Create the diagonal support
+diagonal = (
+    cq.Workplane(""XY"")
+    .transformed(offset=(0, width / 2, rib_thickness), rotate=(0, 45, 0))
+    .box(diagonal_support, rib_thickness, rib_thickness)
+)
+
+# Combine all parts
+bracket = base_holes.union(vertical_plate).union(diagonal)
+
+# Step 3: Save the Model
+cq.exporters.export(bracket, ""metal_bracket.stl"")
+cq.exporters.export(bracket.section(), ""metal_bracket.dxf"")
+cq.exporters.export(bracket, ""metal_bracket.step"")
+
+# Step 4: Visualize the Model
+show(bracket)  # always visualize the model```"
+with_hole.py,"```python
+                        # filename: plate_with_hole.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+length = 100.0  # mm
+width = 50.0    # mm (assumed)
+thickness = 5.0 # mm
+hole_diameter = 20.0 # mm
+
+# Step 2: Create the CAD Model
+plate = cq.Workplane(""XY"").box(length, width, thickness)
+plate = plate.faces("">Z"").workplane().center(0, 0).hole(hole_diameter)
+
+# Step 3: Save the Model
+cq.exporters.export(plate, ""plate_with_hole.stl"")
+cq.exporters.export(plate.section(), ""plate_with_hole.dxf"")
+cq.exporters.export(plate, ""plate_with_hole.step"")
+
+# Step 4: Visualize the Model
+show(plate)  # always visualize the model```"
+plate_with_centered_triangles_manual.py,"```python
+                        # filename: star_plate_with_centered_triangles_manual.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import math
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+angle_between_points = 360 / number_of_points
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five triangles around a center point
+star_2d = cq.Workplane(""XY"")
+
+for i in range(number_of_points):
+    angle = math.radians(i * angle_between_points)
+    x = side_length * math.cos(angle)
+    y = side_length * math.sin(angle)
+    star_2d = star_2d.moveTo(0, 0).lineTo(x, y).lineTo(x / 2, y / 2).close().union()
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_2d.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_manual.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate_with_centered_triangles_manual.dxf"")
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_manual.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+2412_wing.py,"```python
+                        # filename: naca_2412_wing.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import numpy as np
+
+# Step 1: Define Parameters
+chord_length = 1.0  # meters
+span = 10.0  # meters
+airfoil_thickness = 0.12  # 12% thickness
+resolution = 100  # number of points to define the airfoil
+
+# Step 2: Generate NACA 2412 Airfoil Coordinates
+def naca_2412_coordinates(chord, thickness, num_points):
+    m = 0.02  # maximum camber
+    p = 0.4   # location of maximum camber
+    t = thickness
+
+    x = np.linspace(0, chord, num_points)
+    yt = 5 * t * chord * (0.2969 * np.sqrt(x/chord) - 0.1260 * (x/chord) - 0.3516 * (x/chord)**2 + 0.2843 * (x/chord)**3 - 0.1015 * (x/chord)**4)
+    yc = np.where(x < p * chord, 
+                  m * (x / (p**2)) * (2 * p - x / chord), 
+                  m * ((chord - x) / ((1 - p)**2)) * (1 + x / chord - 2 * p))
+
+    xu = x - yt * np.sin(np.arctan(np.gradient(yc, x)))
+    xl = x + yt * np.sin(np.arctan(np.gradient(yc, x)))
+    yu = yc + yt * np.cos(np.arctan(np.gradient(yc, x)))
+    yl = yc - yt * np.cos(np.arctan(np.gradient(yc, x)))
+
+    upper_surface = np.column_stack((xu, yu))
+    lower_surface = np.column_stack((xl, yl))
+
+    return np.vstack((upper_surface, lower_surface[::-1]))
+
+coordinates = naca_2412_coordinates(chord_length, airfoil_thickness, resolution)
+
+# Step 3: Create the CAD Model
+airfoil_wire = cq.Workplane(""XY"").polyline(coordinates.tolist()).close()
+wing = airfoil_wire.extrude(span)
+
+# Step 4: Save the Model
+cq.exporters.export(wing, ""naca_2412_wing.stl"")
+cq.exporters.export(wing, ""naca_2412_wing.step"")
+
+# Step 5: Visualize the Model
+show_object(wing)  # always visualize the model```"
+,"```python
+                        # filename: screw.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import math
+
+# Step 1: Define Parameters
+screw_radius = 2.0
+screw_length = 10.0
+thread_pitch = 1.0
+head_height = 2.0
+head_diameter = 4.0
+
+# Step 2: Create the CAD Model
+# Create the screw shaft
+shaft = cq.Workplane(""XY"").cylinder(screw_length, screw_radius)
+
+# Create the threads using a helical sweep
+def helix_path(t):
+    return cq.Vector(screw_radius * math.cos(t), screw_radius * math.sin(t), thread_pitch * t / (2 * math.pi))
+
+thread_profile = cq.Workplane(""XZ"").polygon(3, 0.5)
+threads = thread_profile.sweep(cq.Workplane(""XY"").parametricCurve(helix_path, start=0, stop=2 * math.pi * screw_length / thread_pitch))
+
+# Create the screw head
+head = cq.Workplane(""XY"").cylinder(head_height, head_diameter / 2)
+
+# Combine shaft, threads, and head
+screw = shaft.union(threads).union(head.translate((0, 0, screw_length)))
+
+# Step 3: Save the Model
+cq.exporters.export(screw, ""screw.stl"")
+cq.exporters.export(screw.section(), ""screw.dxf"")
+cq.exporters.export(screw, ""screw.step"")
+
+# Step 4: Visualize the Model
+show(screw)  # always visualize the model```"
+plate_with_triangles.py,"```python
+                        # filename: star_plate_with_triangles.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five triangles
+star_2d = cq.Workplane(""XY"").polygon(number_of_points * 2, side_length)
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_2d.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate_with_triangles.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate_with_triangles.dxf"")
+cq.exporters.export(star_plate, ""star_plate_with_triangles.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+,"```python
+                        # filename: box.py
+import cadquery as cq
+from ocp_vscode import *
+
+# Step 1: Define Parameters
+height = 60.0
+width = 80.0
+thickness = 10.0
+
+# Step 2: Create the CAD Model
+box = cq.Workplane(""XY"").box(height, width, thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(box, ""box.stl"")
+cq.exporters.export(box.section(), ""box.dxf"")
+cq.exporters.export(box, ""box.step"")
+
+# Step 4: Visualize the Model
+show(box)```"
+component.py,"```python
+                        # filename: mechanical_component.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+length = 4.00  # inches
+height = 2.00  # inches
+width = 1.00   # inches
+fillet_radius = 0.25  # inches
+threaded_hole_location = 0.75  # inches from the left edge
+threaded_hole_diameter = 0.201  # inches (approximate for 1/4-20 UNC)
+threaded_hole_depth = 0.50  # inches
+through_hole_location = threaded_hole_location + 2.500  # inches
+through_hole_diameter = 0.500  # inches
+
+# Step 2: Create the CAD Model
+# Create the base rectangle with rounded edges
+base = cq.Workplane(""XY"").box(length, height, width).edges(""|Z"").fillet(fillet_radius)
+
+# Add the threaded hole
+base = base.faces("">Z"").workplane().center(threaded_hole_location - length / 2, 0).hole(threaded_hole_diameter, threaded_hole_depth)
+
+# Add the through hole
+base = base.faces("">Z"").workplane().center(through_hole_location - length / 2, 0).hole(through_hole_diameter, width)
+
+# Step 3: Save the Model
+cq.exporters.export(base, ""mechanical_component.stl"")
+cq.exporters.export(base.section(), ""mechanical_component.dxf"")
+cq.exporters.export(base, ""mechanical_component.step"")
+
+# Step 4: Visualize the Model
+show(base)  # always visualize the model```"
+plate_with_centered_triangles_corrected.py,"```python
+                        # filename: star_plate_with_centered_triangles_corrected.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import math
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+angle_between_points = 360 / number_of_points
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five triangles around a center point
+star_2d = cq.Workplane(""XY"")
+
+for i in range(number_of_points):
+    angle = math.radians(i * angle_between_points)
+    x1 = side_length * math.cos(angle)
+    y1 = side_length * math.sin(angle)
+    angle_next = math.radians((i + 1) * angle_between_points)
+    x2 = side_length * math.cos(angle_next)
+    y2 = side_length * math.sin(angle_next)
+    
+    # Create a triangle for each point
+    triangle = cq.Workplane(""XY"").moveTo(0, 0).lineTo(x1, y1).lineTo(x2, y2).close()
+    star_2d = star_2d.union(triangle)
+
+# Combine all triangles into a single face
+star_face = star_2d.combine()
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_face.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_corrected.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate_with_centered_triangles_corrected.dxf"")
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_corrected.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+plate.py,"```python
+                        # filename: weld_plate.py
+import cadquery as cq
+from ocp_vscode import *  # for visualization
+
+# Step 1: Define Parameters
+height = 145.0
+width = 135.0
+thickness = 10.0
+hole_diameter = 13.50
+triangle_base_height = 135.0
+triangle_diagonal = 113.14
+cutout_side = 21.21
+curve_radius = 13.50
+slot_length = 50.0
+
+# Step 2: Create the CAD Model
+# Create the base plate
+plate = cq.Workplane(""XY"").rect(width, height).extrude(thickness)
+
+# Add holes
+plate = plate.faces("">Z"").workplane().rarray(40, 40, 2, 2).circle(hole_diameter / 2).cutThruAll()
+
+# Form triangular profile
+triangle = (
+    cq.Workplane(""XZ"")
+    .moveTo(0, 0)
+    .lineTo(triangle_base_height, 0)
+    .lineTo(0, triangle_base_height)
+    .close()
+    .extrude(thickness)
+)
+
+# Create triangular cutout
+cutout = (
+    cq.Workplane(""XZ"")
+    .moveTo(0, 0)
+    .lineTo(cutout_side, 0)
+    .lineTo(0, cutout_side)
+    .close()
+    .extrude(thickness)
+)
+
+# Subtract the cutout from the triangle
+triangle = triangle.cut(cutout)
+
+# Add curve and slots
+plate = plate.faces("">Y"").workplane().center(width / 2 - curve_radius, height / 2 - curve_radius).circle(curve_radius).cutThruAll()
+plate = plate.faces("">Y"").workplane().rarray(60, 60, 1, 2).slot2D(slot_length, hole_diameter).cutThruAll()
+
+# Combine the plate and triangle
+final_model = plate.union(triangle)
+
+# Step 3: Save the Model
+cq.exporters.export(final_model, ""weld_plate.stl"")
+cq.exporters.export(final_model.section(), ""weld_plate.dxf"")
+cq.exporters.export(final_model, ""weld_plate.step"")
+
+# Step 4: Visualize the Model
+show(final_model)  # visualize the model```"
+plate_with_centered_triangles_fixed.py,"```python
+                        # filename: star_plate_with_centered_triangles_fixed.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import math
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+angle_between_points = 360 / number_of_points
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five triangles around a center point
+star_2d = cq.Workplane(""XY"")
+
+for i in range(number_of_points):
+    angle = math.radians(i * angle_between_points)
+    x1 = side_length * math.cos(angle)
+    y1 = side_length * math.sin(angle)
+    angle_next = math.radians((i + 1) * angle_between_points)
+    x2 = side_length * math.cos(angle_next)
+    y2 = side_length * math.sin(angle_next)
+    
+    # Create a triangle for each point
+    triangle = cq.Workplane(""XY"").moveTo(0, 0).lineTo(x1, y1).lineTo(x2, y2).close()
+    star_2d = star_2d.union(triangle)
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_2d.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_fixed.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate_with_centered_triangles_fixed.dxf"")
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_fixed.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+,"```python
+                        # filename: components.py
+import cadquery as cq
+from ocp_vscode import * # never forget this line
+
+# Step 1: Define Parameters for Component C-1
+length_c1 = 154.0
+width_c1 = 90.0
+thickness_c1 = 15.0
+fillet_radius_c1 = 6.0
+hole_diameter_c1 = 3.0
+hole_distance_length_c1 = 255.0
+hole_distance_width_c1 = 90.0
+
+# Step 2: Create the CAD Model for Component C-1
+component_c1 = (
+    cq.Workplane(""XY"")
+    .rect(length_c1, width_c1)
+    .extrude(thickness_c1)
+    .edges(""|Z"")
+    .fillet(fillet_radius_c1)
+    .faces("">Z"")
+    .workplane()
+    .pushPoints([
+        (-hole_distance_length_c1 / 2, -hole_distance_width_c1 / 2),
+        (hole_distance_length_c1 / 2, -hole_distance_width_c1 / 2),
+        (-hole_distance_length_c1 / 2, hole_distance_width_c1 / 2),
+        (hole_distance_length_c1 / 2, hole_distance_width_c1 / 2)
+    ])
+    .hole(hole_diameter_c1)
+)
+
+# Step 3: Save the Model for Component C-1
+cq.exporters.export(component_c1, ""component_c1.stl"")
+cq.exporters.export(component_c1.section(), ""component_c1.dxf"")
+cq.exporters.export(component_c1, ""component_c1.step"")
+
+# Step 4: Visualize the Model for Component C-1
+show(component_c1) # always visualize the model
+
+# Step 1: Define Parameters for Component C-2
+length_c2 = 170.0
+width_c2 = 90.0
+thickness_c2 = 20.0
+fillet_radius_c2 = 6.0
+hole_diameter_c2 = 4.0
+hole_distance_length_c2 = 350.0
+hole_distance_width_c2 = 170.0
+
+# Step 2: Create the CAD Model for Component C-2
+component_c2 = (
+    cq.Workplane(""XY"")
+    .rect(length_c2, width_c2)
+    .extrude(thickness_c2)
+    .edges(""|Z"")
+    .fillet(fillet_radius_c2)
+    .faces("">Z"")
+    .workplane()
+    .pushPoints([
+        (-hole_distance_length_c2 / 2, -hole_distance_width_c2 / 2),
+        (hole_distance_length_c2 / 2, -hole_distance_width_c2 / 2),
+        (-hole_distance_length_c2 / 2, hole_distance_width_c2 / 2),
+        (hole_distance_length_c2 / 2, hole_distance_width_c2 / 2)
+    ])
+    .hole(hole_diameter_c2)
+)
+
+# Step 3: Save the Model for Component C-2
+cq.exporters.export(component_c2, ""component_c2.stl"")
+cq.exporters.export(component_c2.section(), ""component_c2.dxf"")
+cq.exporters.export(component_c2, ""component_c2.step"")
+
+# Step 4: Visualize the Model for Component C-2
+show(component_c2) # always visualize the model```"
+c1.py,"```python
+                        # filename: component_c1.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters for Component C-1
+width_c1 = 154.0
+height_c1 = 294.0
+corner_radius_c1 = 6.0
+hole_diameter_c1 = 3.0
+thickness_c1 = 15.0
+
+# Step 2: Create the CAD Model for Component C-1
+# Create the base plate and extrude it
+component_c1 = (
+    cq.Workplane(""XY"")
+    .rect(width_c1, height_c1)
+    .extrude(thickness_c1)
+)
+
+# Apply fillet to the edges
+component_c1 = component_c1.edges(""|Z"").fillet(corner_radius_c1)
+
+# Add holes
+component_c1 = (
+    component_c1.faces("">Z"")
+    .workplane()
+    .pushPoints([(-width_c1/4, -height_c1/4), (width_c1/4, -height_c1/4), 
+                 (-width_c1/4, height_c1/4), (width_c1/4, height_c1/4)])
+    .hole(hole_diameter_c1)
+)
+
+# Step 3: Save the Model
+cq.exporters.export(component_c1, ""component_c1.stl"")
+cq.exporters.export(component_c1.section(), ""component_c1.dxf"")
+cq.exporters.export(component_c1, ""component_c1.step"")
+
+# Step 4: Visualize the Model
+show(component_c1)  # always visualize the model```"
+plate_with_centered_triangles_final.py,"```python
+                        # filename: star_plate_with_centered_triangles_final.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+import math
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+angle_between_points = 360 / number_of_points
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five triangles around a center point
+star_2d = cq.Workplane(""XY"")
+
+for i in range(number_of_points):
+    angle = math.radians(i * angle_between_points)
+    x1 = side_length * math.cos(angle)
+    y1 = side_length * math.sin(angle)
+    angle_next = math.radians((i + 1) * angle_between_points)
+    x2 = side_length * math.cos(angle_next)
+    y2 = side_length * math.sin(angle_next)
+    
+    # Create a triangle for each point
+    triangle = cq.Workplane(""XY"").moveTo(0, 0).lineTo(x1, y1).lineTo(x2, y2).close().wire()
+    star_2d = star_2d.add(triangle)
+
+# Combine all triangles into a single face
+star_face = star_2d.consolidateWires().toPending()
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_face.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_final.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate_with_centered_triangles_final.dxf"")
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles_final.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"
+wing.py,"```python
+                        # filename: naca2412_wing.py
+import cadquery as cq
+from ocp_vscode import * #never forget this line
+
+# Step 1: Define Parameters
+chord_length = 1.0  # Length of the chord
+span = 5.0          # Span of the wing
+naca_profile = ""2412""  # NACA 2412 airfoil
+
+# Step 2: Create the CAD Model
+# Function to generate NACA 2412 airfoil points
+def naca2412_points(chord, num_points=100):
+    import numpy as np
+    m = 0.02  # maximum camber
+    p = 0.4   # position of maximum camber
+    t = 0.12  # maximum thickness
+
+    x = np.linspace(0, 1, num_points)
+    yt = 5 * t * chord * (0.2969 * np.sqrt(x) - 0.1260 * x - 0.3516 * x**2 + 0.2843 * x**3 - 0.1015 * x**4)
+    yc = np.where(x < p, m / p**2 * (2 * p * x - x**2), m / (1 - p)**2 * ((1 - 2 * p) + 2 * p * x - x**2))
+    dyc_dx = np.where(x < p, 2 * m / p**2 * (p - x), 2 * m / (1 - p)**2 * (p - x))
+    theta = np.arctan(dyc_dx)
+
+    xu = x - yt * np.sin(theta)
+    yu = yc + yt * np.cos(theta)
+    xl = x + yt * np.sin(theta)
+    yl = yc - yt * np.cos(theta)
+
+    upper_points = [(xu[i] * chord, yu[i] * chord) for i in range(num_points)]
+    lower_points = [(xl[i] * chord, yl[i] * chord) for i in range(num_points)]
+
+    return upper_points + lower_points[::-1]
+
+# Create the airfoil profile
+airfoil_points = naca2412_points(chord_length)
+
+# Create a 2D sketch of the airfoil
+airfoil_sketch = cq.Workplane(""XY"").polyline(airfoil_points).close()
+
+# Extrude the sketch to create the wing
+wing = airfoil_sketch.extrude(span)
+
+# Step 3: Save the Model
+cq.exporters.export(wing, ""naca2412_wing.stl"")
+cq.exporters.export(wing.section(), ""naca2412_wing.dxf"")
+cq.exporters.export(wing, ""naca2412_wing.step"")
+
+# Step 4: Visualize the Model
+show(wing) #always visualize the model```"
+plate_with_centered_triangles.py,"```python
+                        # filename: star_plate_with_centered_triangles.py
+import cadquery as cq
+from ocp_vscode import *  # never forget this line
+
+# Step 1: Define Parameters
+side_length = 5.0
+thickness = 2.0
+number_of_points = 5
+
+# Step 2: Create the CAD Model
+# Create a 2D star shape with five triangles around a center point
+star_2d = cq.Workplane(""XY"").star(number_of_points, side_length, side_length / 2)
+
+# Extrude the 2D star shape to create a 3D plate
+star_plate = star_2d.extrude(thickness)
+
+# Step 3: Save the Model
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles.stl"")
+cq.exporters.export(star_plate.section(), ""star_plate_with_centered_triangles.dxf"")
+cq.exporters.export(star_plate, ""star_plate_with_centered_triangles.step"")
+
+# Step 4: Visualize the Model
+show(star_plate)  # always visualize the model```"

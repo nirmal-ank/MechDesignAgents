@@ -33,3 +33,5 @@ tests/
 .DS_Store
 Thumbs.db
 
+mechdesignagents/.gradio/
+data/
